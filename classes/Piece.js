@@ -7,6 +7,8 @@ class Piece {
         this.colour = colour;
         this.x = 0;
         this.y = 0;
+        this.previous_x;
+        this.previous_y;
         this.proposed_moves;
 
         this.assign_strategy();
@@ -187,7 +189,11 @@ const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
     }
 
     // Now validate these moves or skip the validation (in case this function is called by another validation method - avoid recursion)
-    if (!skip_scan) moves = validateMoves(moves, piece, board);
+    if (!skip_scan) {
+        moves = validateMoves(moves, piece, board);
+        piece.previous_x = x;
+        piece.previous_y = y;
+    }
 
     piece.proposed_moves = moves;
     return moves;

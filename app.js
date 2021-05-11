@@ -1,7 +1,9 @@
 const midi = require('midi');
-const { PIECE_TYPES, COLOUR, BRIGHTNESS } = require('./classes/enums');
+const { PIECE_TYPES, COLOUR } = require('./classes/enums');
 const Piece = require('./classes/Piece').Piece;
-const checkForCheckmate = require("./classes/Piece").checkForCheckmate;
+const dotenv = require("dotenv");
+
+dotenv.config(); // Load .env //
 
 // Set up a new output.
 const input = new midi.Input();
@@ -37,7 +39,7 @@ let board = [
   ],
   [
     new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
     new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
     new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
     new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
@@ -86,7 +88,7 @@ const decimalToCoordinates = (d) => {
 }
 const redraw = (colour) => {
     if(colour) colour_filter = colour; else colour_filter = undefined;
-    output.sendMessage([176, 0, 0]);
+    // output.sendMessage([176, 0, 0]);
     for (let y = 0; y < board.length; y++) {
         for (let x = 0; x < board[y].length; x++) {
             const piece = board[y][x];
@@ -128,6 +130,10 @@ const blink = (positions, colour, blink_toggle = false) => {
     }
 }
 
+const sendMove = (move) => {
+    console.log(move);
+}
+
 const show_promotion = () => {
     // Turn all lights off //
     output.sendMessage([176, 0, 0]);
@@ -140,7 +146,12 @@ const show_promotion = () => {
 }
 
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-const moveToNotation = (from, to) => {
+const moveToNotation = (from, to, promotion) => {
+    let piece;
+    if(promotion) {
+        piece = board[to[1]][to[0]];
+        from = [piece.previous_x, piece.previous_y];
+    }
     // Convert the X coordinate to a file //
     let from_file = files[from[0]];
     let to_file = files[to[0]];
@@ -149,7 +160,15 @@ const moveToNotation = (from, to) => {
     let from_one_based = (8 - (from[1] + 1)) + 1;
     let to_one_based = (8 - (to[1] + 1)) + 1;
 
-    return from_file + from_one_based + to_file + to_one_based;
+    let promoted_to = "";
+    if(promotion) {
+        if(piece.type === PIECE_TYPES.QUEEN) promoted_to = "q";
+        else if(piece.type === PIECE_TYPES.ROOK) promoted_to = "r";
+        else if(piece.type === PIECE_TYPES.BISHOP) promoted_to = "b";
+        else if(piece.type === PIECE_TYPES.KNIGHT) promoted_to = "n";
+    }
+
+    return from_file + from_one_based + to_file + to_one_based + promoted_to;
 };
 const notationToMove = (notation) => {
     // e.g. b8c6 //
@@ -202,7 +221,10 @@ input.on('message', (deltaTime, message) => {
                 selected_piece.type = chosen_type;
                 selected_piece.assign_strategy();
                 board[selected_piece.y][selected_piece.x] = selected_piece;
+                let algebraic_notation = moveToNotation([selected_piece.x, selected_piece.y], [selected_piece.x, selected_piece.y], chosen_type);
+                sendMove(algebraic_notation);
                 selected_piece = undefined;
+                output.sendMessage([176, 0, 0]);
                 redraw();
             }
         }
@@ -239,6 +261,7 @@ input.on('message', (deltaTime, message) => {
                             board[7][4] = "";
                             board[7][2] = selected_piece;
                             board[7][3] = rook;
+                            output.sendMessage([144, coordinatesToDecimal(0, 7), 12]);
                         } else if(chosen_move[2] === "castle kingside") {
                             let rook = board[7][7];
                             rook.x = 5;
@@ -249,6 +272,7 @@ input.on('message', (deltaTime, message) => {
                             board[7][4] = "";
                             board[7][6] = selected_piece;
                             board[7][5] = rook;
+                            output.sendMessage([144, coordinatesToDecimal(7, 7), 12]);
                         }
 
                         // Revoke castling rights //
@@ -279,13 +303,16 @@ input.on('message', (deltaTime, message) => {
                             // Black promotes //
                             console.log("Black pawn promotes");
                             ask_promotion = true;
+                        } else {
+                            sendMove(algebraic_notation);
                         }
+                    } else {
+                        sendMove(algebraic_notation);
                     }
                 }
 
-                console.log(algebraic_notation);
                 // Check for a checkmate //
-                checkForCheckmate((whose_turn === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK), board);
+                // checkForCheckmate((whose_turn === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK), board);
 
                 // Swap whose turn it is //
                 if(whose_turn === COLOUR.BLACK) whose_turn = COLOUR.WHITE; else whose_turn = COLOUR.BLACK;
