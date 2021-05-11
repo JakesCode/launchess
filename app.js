@@ -2,6 +2,10 @@ const midi = require('midi');
 const { PIECE_TYPES, COLOUR } = require('./classes/enums');
 const Piece = require('./classes/Piece').Piece;
 const dotenv = require("dotenv");
+const axios = require("axios").default;
+const fetch = require("node-fetch");
+const ndjson = require("ndjson");
+const ndsjonStream = require("can-ndjson-stream");
 
 dotenv.config(); // Load .env //
 
@@ -131,7 +135,14 @@ const blink = (positions, colour, blink_toggle = false) => {
 }
 
 const sendMove = (move) => {
-    console.log(move);
+    // Send this move to the game //
+    fetch("https://lichess.org/api/bot/game/" + game_id + "/move/" + move, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + process.env.LICHESS_API_KEY
+        }
+    })
 }
 
 const show_promotion = () => {
@@ -193,161 +204,169 @@ let whose_turn = COLOUR.WHITE;
 let ask_promotion = false;
 let selected_piece;
 input.on('message', (deltaTime, message) => {
-    if(ask_promotion) {
-        if(message[2] === 127)  {
-            let coords_pressed = decimalToCoordinates(message[1]);
-            let chosen_type;
-            if(coords_pressed.toString() === [2, 2].toString()) {
-                // Promote to rook //
-                console.log("Promote to rook");
-                chosen_type = PIECE_TYPES.ROOK;
-            } else if (coords_pressed.toString() === [5, 2].toString()) {
-                // Promote to knight //
-                console.log("Promote to knight");
-                chosen_type = PIECE_TYPES.KNIGHT;
-            } else if (coords_pressed.toString() === [2, 5].toString()) {
-                // Promote to bishop //
-                console.log("Promote to bishop");
-                chosen_type = PIECE_TYPES.BISHOP;
-            } else if (coords_pressed.toString() === [5, 5].toString()) {
-                // Promote to queen //
-                console.log("Promote to queen");
-                chosen_type = PIECE_TYPES.QUEEN;
-            }
-
-            if(chosen_type) {
-                // Valid move was made - come out of promotion mode, promote the piece, redraw the board //
-                ask_promotion = false;
-                selected_piece.type = chosen_type;
-                selected_piece.assign_strategy();
-                board[selected_piece.y][selected_piece.x] = selected_piece;
-                let algebraic_notation = moveToNotation([selected_piece.x, selected_piece.y], [selected_piece.x, selected_piece.y], chosen_type);
-                sendMove(algebraic_notation);
-                selected_piece = undefined;
-                output.sendMessage([176, 0, 0]);
-                redraw();
-            }
-        }
-    }
-    else if(message[1] === 120) {
+    if(message[1] === 120) {
         if(message[2] === 127) {output.sendMessage([176, 0, 0]); redraw(COLOUR.WHITE);}
         else redraw();
     } else if(message[1] === 8) {
         if(message[2] === 127) {output.sendMessage([176, 0, 0]); redraw(COLOUR.BLACK);}
         else redraw();
     }
-    else if(message[2] === 127) {
-        should_blink = false;
-
-        // Get position pressed //
-        let pos = decimalToCoordinates(message[1]);
-        if(selected_piece) {
-            let chosen_moves = selected_piece.proposed_moves.filter(move => move[0] === pos[0] && move[1] === pos[1]);
-            if(chosen_moves.length > 0) {
-                // A move was actually chosen //
-                let chosen_move = chosen_moves[0];
-                let algebraic_notation = moveToNotation([selected_piece.x, selected_piece.y], chosen_move);
-                
-                // Castling logic //
-                if(typeof(chosen_move[2]) === "string") {
-                    if(chosen_move[2].startsWith("castle")) {
-                        if(chosen_move[2] === "castle queenside") {
-                            let rook = board[7][0];
-                            rook.x = 3;
-                            rook.y = 7;
-                            selected_piece.x = 2;
-                            selected_piece.y = 7;
-                            board[7][0] = "";
-                            board[7][4] = "";
-                            board[7][2] = selected_piece;
-                            board[7][3] = rook;
-                            output.sendMessage([144, coordinatesToDecimal(0, 7), 12]);
-                        } else if(chosen_move[2] === "castle kingside") {
-                            let rook = board[7][7];
-                            rook.x = 5;
-                            rook.y = 7;
-                            selected_piece.x = 6;
-                            selected_piece.y = 7;
-                            board[7][7] = "";
-                            board[7][4] = "";
-                            board[7][6] = selected_piece;
-                            board[7][5] = rook;
-                            output.sendMessage([144, coordinatesToDecimal(7, 7), 12]);
-                        }
-
-                        // Revoke castling rights //
-                        selected_piece.castling_rights = false;
-                        board[selected_piece.y][selected_piece.x].castling_rights = false;
+    else if(game_id) {
+        if(whose_turn === COLOUR.WHITE) {
+            if(ask_promotion) {
+                if(message[2] === 127)  {
+                    let coords_pressed = decimalToCoordinates(message[1]);
+                    let chosen_type;
+                    if(coords_pressed.toString() === [2, 2].toString()) {
+                        // Promote to rook //
+                        console.log("Promote to rook");
+                        chosen_type = PIECE_TYPES.ROOK;
+                    } else if (coords_pressed.toString() === [5, 2].toString()) {
+                        // Promote to knight //
+                        console.log("Promote to knight");
+                        chosen_type = PIECE_TYPES.KNIGHT;
+                    } else if (coords_pressed.toString() === [2, 5].toString()) {
+                        // Promote to bishop //
+                        console.log("Promote to bishop");
+                        chosen_type = PIECE_TYPES.BISHOP;
+                    } else if (coords_pressed.toString() === [5, 5].toString()) {
+                        // Promote to queen //
+                        console.log("Promote to queen");
+                        chosen_type = PIECE_TYPES.QUEEN;
                     }
-                } else {
-                    // Anything other than a castle //
-                    if(selected_piece.type === PIECE_TYPES.KING || selected_piece.type === PIECE_TYPES.ROOK) {
-                        if(selected_piece.castling_rights) {
-                            // Revoke castling rights //
-                            selected_piece.castling_rights = false;
-                            board[selected_piece.y][selected_piece.x].castling_rights = false;
-                        }
-                    }
-
-                    board[selected_piece.y][selected_piece.x] = "";
-                    selected_piece.x = chosen_move[0];
-                    selected_piece.y = chosen_move[1];
-                    board[chosen_move[1]][chosen_move[0]] = selected_piece;
-
-                    if(selected_piece.type === PIECE_TYPES.PAWN) {
-                        if(selected_piece.colour === COLOUR.WHITE && selected_piece.y === 0) {
-                            // White promotes //
-                            console.log("White pawn promotes");
-                            ask_promotion = true;
-                        } else if (selected_piece.colour === COLOUR.BLACK && selected_piece.y === 7) {
-                            // Black promotes //
-                            console.log("Black pawn promotes");
-                            ask_promotion = true;
-                        } else {
-                            sendMove(algebraic_notation);
-                        }
-                    } else {
+        
+                    if(chosen_type) {
+                        // Valid move was made - come out of promotion mode, promote the piece, redraw the board //
+                        ask_promotion = false;
+                        selected_piece.type = chosen_type;
+                        selected_piece.assign_strategy();
+                        board[selected_piece.y][selected_piece.x] = selected_piece;
+                        let algebraic_notation = moveToNotation([selected_piece.x, selected_piece.y], [selected_piece.x, selected_piece.y], chosen_type);
                         sendMove(algebraic_notation);
+                        selected_piece = undefined;
+                        output.sendMessage([176, 0, 0]);
+                        redraw();
                     }
                 }
-
-                // Check for a checkmate //
-                // checkForCheckmate((whose_turn === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK), board);
-
-                // Swap whose turn it is //
-                if(whose_turn === COLOUR.BLACK) whose_turn = COLOUR.WHITE; else whose_turn = COLOUR.BLACK;
             }
-            
-            if(!ask_promotion) {
-                selected_piece = undefined;
-                redraw();
-            }
-        } else {
-            if(pos[0] >= 0 && pos[0] <= 8 && pos[1] >= 0 && pos[1] <= 8) {
-                let x = pos[0];
-                let y = pos[1];
-                if(board[y][x] !== "") {
-                    let piece = board[y][x];
-                    if(piece.colour === whose_turn) {
-                        if(piece === selected_piece) {
-                            output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), selected_piece.getColour()]);
-                            selected_piece = undefined;
-                            redraw();
-                        } else {
-                            if(selected_piece) {
-                                // Put old piece back //
-                                output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), selected_piece.getColour()]);
+            else if(message[2] === 127) {
+                should_blink = false;
+        
+                // Get position pressed //
+                let pos = decimalToCoordinates(message[1]);
+                if(selected_piece) {
+                    let chosen_moves = selected_piece.proposed_moves.filter(move => move[0] === pos[0] && move[1] === pos[1]);
+                    if(chosen_moves.length > 0) {
+                        // A move was actually chosen //
+                        let chosen_move = chosen_moves[0];
+                        let algebraic_notation = moveToNotation([selected_piece.x, selected_piece.y], chosen_move);
+                        
+                        // Castling logic //
+                        if(typeof(chosen_move[2]) === "string") {
+                            if(chosen_move[2].startsWith("castle")) {
+                                if(chosen_move[2] === "castle queenside") {
+                                    let rook = board[7][0];
+                                    rook.x = 3;
+                                    rook.y = 7;
+                                    selected_piece.x = 2;
+                                    selected_piece.y = 7;
+                                    board[7][0] = "";
+                                    board[7][4] = "";
+                                    board[7][2] = selected_piece;
+                                    board[7][3] = rook;
+                                    output.sendMessage([144, coordinatesToDecimal(0, 7), 12]);
+
+                                    sendMove("e1c1");
+                                } else if(chosen_move[2] === "castle kingside") {
+                                    let rook = board[7][7];
+                                    rook.x = 5;
+                                    rook.y = 7;
+                                    selected_piece.x = 6;
+                                    selected_piece.y = 7;
+                                    board[7][7] = "";
+                                    board[7][4] = "";
+                                    board[7][6] = selected_piece;
+                                    board[7][5] = rook;
+                                    output.sendMessage([144, coordinatesToDecimal(7, 7), 12]);
+
+                                    sendMove("e1g1");
+                                }
+        
+                                // Revoke castling rights //
+                                selected_piece.castling_rights = false;
+                                board[selected_piece.y][selected_piece.x].castling_rights = false;
                             }
-
-                            selected_piece = piece;
-                            let moves = selected_piece.strategy([x, y], board, selected_piece);
-                            if(moves.length > 0) {
-                                // Turn the current move's square 'off' //
-                                output.sendMessage([144, coordinatesToDecimal(x, y), 12]);
-
-                                should_blink = true;
-                                blink(moves, selected_piece.getColour());
-                            } else selected_piece = undefined;
+                        } else {
+                            // Anything other than a castle //
+                            if(selected_piece.type === PIECE_TYPES.KING || selected_piece.type === PIECE_TYPES.ROOK) {
+                                if(selected_piece.castling_rights) {
+                                    // Revoke castling rights //
+                                    selected_piece.castling_rights = false;
+                                    board[selected_piece.y][selected_piece.x].castling_rights = false;
+                                }
+                            }
+        
+                            board[selected_piece.y][selected_piece.x] = "";
+                            selected_piece.x = chosen_move[0];
+                            selected_piece.y = chosen_move[1];
+                            board[chosen_move[1]][chosen_move[0]] = selected_piece;
+        
+                            if(selected_piece.type === PIECE_TYPES.PAWN) {
+                                if(selected_piece.colour === COLOUR.WHITE && selected_piece.y === 0) {
+                                    // White promotes //
+                                    console.log("White pawn promotes");
+                                    ask_promotion = true;
+                                } else if (selected_piece.colour === COLOUR.BLACK && selected_piece.y === 7) {
+                                    // Black promotes //
+                                    console.log("Black pawn promotes");
+                                    ask_promotion = true;
+                                } else {
+                                    sendMove(algebraic_notation);
+                                }
+                            } else {
+                                sendMove(algebraic_notation);
+                            }
+                        }
+        
+                        // Check for a checkmate //
+                        // checkForCheckmate((whose_turn === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK), board);
+        
+                        // Swap whose turn it is //
+                        if(whose_turn === COLOUR.BLACK) whose_turn = COLOUR.WHITE; else whose_turn = COLOUR.BLACK;
+                    }
+                    
+                    if(!ask_promotion) {
+                        selected_piece = undefined;
+                        redraw();
+                    }
+                } else {
+                    if(pos[0] >= 0 && pos[0] <= 8 && pos[1] >= 0 && pos[1] <= 8) {
+                        let x = pos[0];
+                        let y = pos[1];
+                        if(board[y][x] !== "") {
+                            let piece = board[y][x];
+                            if(piece.colour === whose_turn) {
+                                if(piece === selected_piece) {
+                                    output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), selected_piece.getColour()]);
+                                    selected_piece = undefined;
+                                    redraw();
+                                } else {
+                                    if(selected_piece) {
+                                        // Put old piece back //
+                                        output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), selected_piece.getColour()]);
+                                    }
+        
+                                    selected_piece = piece;
+                                    let moves = selected_piece.strategy([x, y], board, selected_piece);
+                                    if(moves.length > 0) {
+                                        // Turn the current move's square 'off' //
+                                        output.sendMessage([144, coordinatesToDecimal(x, y), 12]);
+        
+                                        should_blink = true;
+                                        blink(moves, selected_piece.getColour());
+                                    } else selected_piece = undefined;
+                                }
+                            }
                         }
                     }
                 }
@@ -356,6 +375,104 @@ input.on('message', (deltaTime, message) => {
     }
 });
 
-redraw();
+const parseAPIResponse = (response) => {
+    switch(response.type) {
+        case "gameState":
+            // The one we want! //
+            // Parse the 'moves' string //
+            let splitMoves = response.moves.split(" ");
+            if(splitMoves.length % 2 === 0) {
+                // Even number of moves - black must have moved last //
+                let black_move = splitMoves.pop();
+                let converted_black_move = notationToMove(black_move);
+                let black_from = converted_black_move[0];
+                let black_to = converted_black_move[1];
 
-process.on("SIGINT", () => output.closePort())
+                if(black_move === "e8c8") {
+                    // Black has castled queenside //
+                    let piece = board[black_from[1]][black_from[0]];
+                    let rook = board[0][0];
+                    board[0][0] = "";
+                    board[black_from[1]][black_from[0]] = "";
+                    piece.x = black_to[0];
+                    piece.y = black_to[1];
+                    rook.x = 3;
+                    rook.y = 0;
+                    board[0][3] = rook;
+                    board[black_to[1]][black_to[0]] = piece;
+
+                    output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                    output.sendMessage([144, coordinatesToDecimal(0, 0), 12]);
+                } else if(black_move === "e8g8") {
+                    // Black has castled kingside //
+                    let piece = board[black_from[1]][black_from[0]];
+                    let rook = board[0][7];
+                    board[0][7] = "";
+                    board[black_from[1]][black_from[0]] = "";
+                    piece.x = black_to[0];
+                    piece.y = black_to[1];
+                    rook.x = 5;
+                    rook.y = 0;
+                    board[0][5] = rook;
+                    board[black_to[1]][black_to[0]] = piece;
+
+                    output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                    output.sendMessage([144, coordinatesToDecimal(7, 0), 12]);
+                } else {
+                    // Move the piece //
+                    let piece = board[black_from[1]][black_from[0]];
+                    piece.x = black_to[0];
+                    piece.y = black_to[1];
+                    board[black_from[1]][black_from[0]] = "";
+                    output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                    board[black_to[1]][black_to[0]] = piece;
+                }
+
+                // Swap whose turn it is //
+                if(whose_turn === COLOUR.BLACK) whose_turn = COLOUR.WHITE; else whose_turn = COLOUR.BLACK;
+                redraw();
+            }
+            break;
+    }
+}
+
+// 'Main' function here.... //
+console.log("Welcome to Launchess!");
+let game_id;
+axios.post("https://lichess.org/api/challenge/ai", {
+    level: 1,
+    color: "white" 
+}, {
+    headers: {
+        "Content-type": "application/json",
+        "Authorization": "Bearer " + process.env.LICHESS_API_KEY
+    }
+}).then(response => {
+    if(response.data) {
+        console.log("Game accepted by Lichess bot. Good luck!");
+        game_id = response.data.id;
+
+        // Join the game's stream //
+        fetch("https://lichess.org/api/bot/game/stream/" + game_id, {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + process.env.LICHESS_API_KEY
+            }
+        }).then(response => response.body).then(stream => {
+            stream.on("readable", () => {
+                let chunk;
+                while (null !== (chunk = stream.read())) {
+                    chunk = chunk.toString();
+                    if(chunk !== "\n") {
+                        parseAPIResponse(JSON.parse(chunk));
+                    }
+                }
+            })
+        });
+        redraw();
+    }
+}).catch(err => {
+    console.log(err)
+})
+
+process.on("beforeExit", () => output.closePort())
