@@ -169,7 +169,7 @@ const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
         }
 
         // En passant //
-        if(y === 4) {
+        if(y === 3) {
             if(board[y][x-1] && !board[y-1][x-1]) if(board[y][x-1].eligible_for_en_passant) {
                 moves.push([x-1, y, "en passant"]);
             }

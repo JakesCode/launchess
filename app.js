@@ -296,8 +296,10 @@ input.on('message', (deltaTime, message) => {
                             } else if (chosen_move[2] === "double") {
                                 // Double pawn move - open to en passant //
                                 selected_piece.eligible_for_en_passant = true;
-                                board[selected_piece.y][selected_piece.x] = selected_piece;
-
+                                board[selected_piece.y][selected_piece.x] = "";
+                                selected_piece.x = chosen_move[0];
+                                selected_piece.y = chosen_move[1];
+                                board[chosen_move[1]][chosen_move[0]] = selected_piece;
                                 sendMove(algebraic_notation);
                             } else if (chosen_move[2] === "en passant") {
                                 if(selected_piece.x-1 >= 0) {
