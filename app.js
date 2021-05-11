@@ -4,8 +4,6 @@ const Piece = require('./classes/Piece').Piece;
 const dotenv = require("dotenv");
 const axios = require("axios").default;
 const fetch = require("node-fetch");
-const ndjson = require("ndjson");
-const ndsjonStream = require("can-ndjson-stream");
 
 dotenv.config(); // Load .env //
 
