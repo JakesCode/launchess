@@ -37,7 +37,7 @@ let board = [
   ],
   [
     new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
     new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
     new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
     new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
@@ -86,7 +86,7 @@ const decimalToCoordinates = (d) => {
 }
 const redraw = (colour) => {
     if(colour) colour_filter = colour; else colour_filter = undefined;
-    // output.sendMessage([176, 0, 0]);
+    output.sendMessage([176, 0, 0]);
     for (let y = 0; y < board.length; y++) {
         for (let x = 0; x < board[y].length; x++) {
             const piece = board[y][x];
@@ -120,8 +120,23 @@ const blink = (positions, colour, blink_toggle = false) => {
         positions.forEach(position => {
             output.sendMessage([144, coordinatesToDecimal(position[0], position[1]), 12]);
         });
-        redraw();
+        if(!ask_promotion) {
+            redraw();
+        } else {
+            show_promotion();
+        }
     }
+}
+
+const show_promotion = () => {
+    // Turn all lights off //
+    output.sendMessage([176, 0, 0]);
+
+    // Ask which piece the pawn would like to promote to //
+    output.sendMessage([144, coordinatesToDecimal(2, 2), 28]);
+    output.sendMessage([144, coordinatesToDecimal(5, 2), 62]);
+    output.sendMessage([144, coordinatesToDecimal(2, 5), 47]);
+    output.sendMessage([144, coordinatesToDecimal(5, 5), 15]);
 }
 
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -136,12 +151,63 @@ const moveToNotation = (from, to) => {
 
     return from_file + from_one_based + to_file + to_one_based;
 };
+const notationToMove = (notation) => {
+    // e.g. b8c6 //
+    // We need to turn b8 into 1,0 and c6 into 2,2 //
+
+    let from = notation.substring(0, 2).split("");
+    let to = notation.substring(2, 4).split("");
+
+    let from_file = files.indexOf(from[0]);
+    let to_file = files.indexOf(to[0]);
+
+    let from_zero_based = 8 - from[1];
+    let to_zero_based = 8 - to[1];
+
+    let converted_from = [eval(from_file), eval(from_zero_based)];
+    let converted_to = [eval(to_file), eval(to_zero_based)];
+
+    return [converted_from, converted_to];
+}
 
 let whose_turn = COLOUR.WHITE;
-
+let ask_promotion = false;
 let selected_piece;
 input.on('message', (deltaTime, message) => {
-    if(message[1] === 120) {
+    if(ask_promotion) {
+        if(message[2] === 127)  {
+            let coords_pressed = decimalToCoordinates(message[1]);
+            let chosen_type;
+            if(coords_pressed.toString() === [2, 2].toString()) {
+                // Promote to rook //
+                console.log("Promote to rook");
+                chosen_type = PIECE_TYPES.ROOK;
+            } else if (coords_pressed.toString() === [5, 2].toString()) {
+                // Promote to knight //
+                console.log("Promote to knight");
+                chosen_type = PIECE_TYPES.KNIGHT;
+            } else if (coords_pressed.toString() === [2, 5].toString()) {
+                // Promote to bishop //
+                console.log("Promote to bishop");
+                chosen_type = PIECE_TYPES.BISHOP;
+            } else if (coords_pressed.toString() === [5, 5].toString()) {
+                // Promote to queen //
+                console.log("Promote to queen");
+                chosen_type = PIECE_TYPES.QUEEN;
+            }
+
+            if(chosen_type) {
+                // Valid move was made - come out of promotion mode, promote the piece, redraw the board //
+                ask_promotion = false;
+                selected_piece.type = chosen_type;
+                selected_piece.assign_strategy();
+                board[selected_piece.y][selected_piece.x] = selected_piece;
+                selected_piece = undefined;
+                redraw();
+            }
+        }
+    }
+    else if(message[1] === 120) {
         if(message[2] === 127) {output.sendMessage([176, 0, 0]); redraw(COLOUR.WHITE);}
         else redraw();
     } else if(message[1] === 8) {
@@ -191,8 +257,7 @@ input.on('message', (deltaTime, message) => {
                     }
                 } else {
                     // Anything other than a castle //
-                    if(selected_piece.type === PIECE_TYPES.KING) {
-                        console.log(selected_piece.castling_rights);
+                    if(selected_piece.type === PIECE_TYPES.KING || selected_piece.type === PIECE_TYPES.ROOK) {
                         if(selected_piece.castling_rights) {
                             // Revoke castling rights //
                             selected_piece.castling_rights = false;
@@ -204,7 +269,18 @@ input.on('message', (deltaTime, message) => {
                     selected_piece.x = chosen_move[0];
                     selected_piece.y = chosen_move[1];
                     board[chosen_move[1]][chosen_move[0]] = selected_piece;
-                    redraw();
+
+                    if(selected_piece.type === PIECE_TYPES.PAWN) {
+                        if(selected_piece.colour === COLOUR.WHITE && selected_piece.y === 0) {
+                            // White promotes //
+                            console.log("White pawn promotes");
+                            ask_promotion = true;
+                        } else if (selected_piece.colour === COLOUR.BLACK && selected_piece.y === 7) {
+                            // Black promotes //
+                            console.log("Black pawn promotes");
+                            ask_promotion = true;
+                        }
+                    }
                 }
 
                 console.log(algebraic_notation);
@@ -214,8 +290,11 @@ input.on('message', (deltaTime, message) => {
                 // Swap whose turn it is //
                 if(whose_turn === COLOUR.BLACK) whose_turn = COLOUR.WHITE; else whose_turn = COLOUR.BLACK;
             }
-            selected_piece = undefined;
-            redraw();
+            
+            if(!ask_promotion) {
+                selected_piece = undefined;
+                redraw();
+            }
         } else {
             if(pos[0] >= 0 && pos[0] <= 8 && pos[1] >= 0 && pos[1] <= 8) {
                 let x = pos[0];

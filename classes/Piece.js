@@ -9,6 +9,10 @@ class Piece {
         this.y = 0;
         this.proposed_moves;
 
+        this.assign_strategy();
+    }
+
+    assign_strategy() {
         switch(this.type) {
             case PIECE_TYPES.ROOK:
                 this.strategy = ROOK_STRATEGY;
@@ -169,7 +173,6 @@ const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
                 // If it's our first move we can move down two //
                 if(y === 1) if(!board[y+2][x]) moves.push([x, y+2]); 
             }
-           
         }
 
         if(y+1 <= 7 && x-1 >= 0) {
