@@ -4,6 +4,7 @@ const Piece = require('./classes/Piece').Piece;
 const dotenv = require("dotenv");
 const axios = require("axios").default;
 const fetch = require("node-fetch");
+const _ = require("lodash");
 
 dotenv.config(); // Load .env //
 
@@ -28,52 +29,54 @@ output.openPort(launchpadOut);
 // Turn off all LEDs //
 output.sendMessage([176, 0, 0]);
 
-let board = [
-  [
-    new Piece(PIECE_TYPES.ROOK, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.KNIGHT, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.BISHOP, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.QUEEN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.KING, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.BISHOP, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.KNIGHT, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.ROOK, COLOUR.BLACK),
-  ],
-  [
-    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-  ],
-  ["", "", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", "", ""],
-  [
-    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-  ],
-  [
-    new Piece(PIECE_TYPES.ROOK, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.KNIGHT, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.BISHOP, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.QUEEN, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.KING, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.BISHOP, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.KNIGHT, COLOUR.WHITE),
-    new Piece(PIECE_TYPES.ROOK, COLOUR.WHITE),
-  ],
-];
+let board_origin = [
+    [
+      new Piece(PIECE_TYPES.ROOK, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.KNIGHT, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.BISHOP, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.QUEEN, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.KING, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.BISHOP, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.KNIGHT, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.ROOK, COLOUR.BLACK),
+    ],
+    [
+      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+    ],
+    ["", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", ""],
+    [
+      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+    ],
+    [
+      new Piece(PIECE_TYPES.ROOK, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.KNIGHT, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.BISHOP, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.QUEEN, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.KING, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.BISHOP, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.KNIGHT, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.ROOK, COLOUR.WHITE),
+    ],
+  ];
+
+let board = _.cloneDeep(board_origin);
 
 for (let y = 0; y < board.length; y++) {
     for (let x = 0; x < board[y].length; x++) {
@@ -412,62 +415,129 @@ input.on('message', (deltaTime, message) => {
     }
 });
 
+const happy_face = [
+    ["", "", "", "", "", "", "", ""],
+    ["", "", 60, "", "", 60, "", ""],
+    ["", "", 60, "", "", 60, "", ""],
+    ["", "", "", "", "", "", "", ""],
+    ["", 60, "", "", "", "", 60, ""],
+    ["", 60, 60, "", "", 60, 60, ""],
+    ["", "", 60, 60, 60, 60, "", ""],
+    ["", "", "", "", "", "", "", ""],
+]
+
+const sad_face = [
+    ["", "", "", "", "", "", "", ""],
+    ["", "", 15, "", "", 15, "", ""],
+    ["", "", 15, "", "", 15, "", ""],
+    ["", "", "", "", "", "", "", ""],
+    ["", "", 15, 15, 15, 15, "", ""],
+    ["", 15, 15, "", "", 15, 15, ""],
+    ["", 15, "", "", "", "", 15, ""],
+    ["", "", "", "", "", "", "", ""],
+]
+
+const checkmate_ending = (win) => {
+    // Turn all the lights off one by one //
+    let all_pieces = board.map(rank => rank.filter(p => p !== "")).filter(result => result.length > 0);
+    let all_pieces_together = [];
+    all_pieces.forEach(rank => {
+        rank.forEach(piece => {
+            all_pieces_together.push(piece);
+        })
+    });
+
+    all_pieces_together.forEach((piece, index) => {
+        setTimeout(() => {
+            output.sendMessage([144, coordinatesToDecimal(piece.x, piece.y), 12]);
+            if(index === all_pieces_together.length-1) {
+                // Finished //
+                for (let y = 0; y < (win ? happy_face.length : sad_face.length); y++) {
+                    for (let x = 0; x < (win ? happy_face[y].length : sad_face[y].length); x++) {
+                        const element = (win ? happy_face[y][x] : sad_face[y][x]);
+                        if(element !== "") {
+                            output.sendMessage([144, coordinatesToDecimal(x, y), element]);
+                        }
+                    }
+                }
+
+                setTimeout(() => {
+                    output.sendMessage([176, 0, 0]);
+                    game_id = undefined;
+                }, 5000);
+            }
+        }, 500 + (index * 50));
+    })
+}
+
 const parseAPIResponse = (response) => {
     switch(response.type) {
         case "gameState":
             // The one we want! //
             // Parse the 'moves' string //
-            let splitMoves = response.moves.split(" ");
-            if(splitMoves.length % 2 === 0) {
-                // Even number of moves - black must have moved last //
-                let black_move = splitMoves.pop();
-                let converted_black_move = notationToMove(black_move);
-                let black_from = converted_black_move[0];
-                let black_to = converted_black_move[1];
-
-                if(black_move === "e8c8") {
-                    // Black has castled queenside //
-                    let piece = board[black_from[1]][black_from[0]];
-                    let rook = board[0][0];
-                    board[0][0] = "";
-                    board[black_from[1]][black_from[0]] = "";
-                    piece.x = black_to[0];
-                    piece.y = black_to[1];
-                    rook.x = 3;
-                    rook.y = 0;
-                    board[0][3] = rook;
-                    board[black_to[1]][black_to[0]] = piece;
-
-                    output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
-                    output.sendMessage([144, coordinatesToDecimal(0, 0), 12]);
-                } else if(black_move === "e8g8") {
-                    // Black has castled kingside //
-                    let piece = board[black_from[1]][black_from[0]];
-                    let rook = board[0][7];
-                    board[0][7] = "";
-                    board[black_from[1]][black_from[0]] = "";
-                    piece.x = black_to[0];
-                    piece.y = black_to[1];
-                    rook.x = 5;
-                    rook.y = 0;
-                    board[0][5] = rook;
-                    board[black_to[1]][black_to[0]] = piece;
-
-                    output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
-                    output.sendMessage([144, coordinatesToDecimal(7, 0), 12]);
+            if(response.winner) {
+                if(response.winner === "white") {
+                    // We won! //
+                    console.log("Checkmate - White is victorious");
+                    checkmate_ending(true);
                 } else {
-                    // Move the piece //
-                    let piece = board[black_from[1]][black_from[0]];
-                    piece.x = black_to[0];
-                    piece.y = black_to[1];
-                    board[black_from[1]][black_from[0]] = "";
-                    output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
-                    board[black_to[1]][black_to[0]] = piece;
+                    // We lost.... //
+                    console.log("Checkmate - Black is victorious");
+                    checkmate_ending(false);
                 }
+            } else {
+                let splitMoves = response.moves.split(" ");
+                if(splitMoves.length % 2 === 0) {
+                    // Even number of moves - black must have moved last //
+                    let black_move = splitMoves.pop();
+                    let converted_black_move = notationToMove(black_move);
+                    let black_from = converted_black_move[0];
+                    let black_to = converted_black_move[1];
 
-                // Swap whose turn it is //
-                if(whose_turn === COLOUR.BLACK) whose_turn = COLOUR.WHITE; else whose_turn = COLOUR.BLACK;
-                redraw();
+                    if(black_move === "e8c8") {
+                        // Black has castled queenside //
+                        let piece = board[black_from[1]][black_from[0]];
+                        let rook = board[0][0];
+                        board[0][0] = "";
+                        board[black_from[1]][black_from[0]] = "";
+                        piece.x = black_to[0];
+                        piece.y = black_to[1];
+                        rook.x = 3;
+                        rook.y = 0;
+                        board[0][3] = rook;
+                        board[black_to[1]][black_to[0]] = piece;
+
+                        output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                        output.sendMessage([144, coordinatesToDecimal(0, 0), 12]);
+                    } else if(black_move === "e8g8") {
+                        // Black has castled kingside //
+                        let piece = board[black_from[1]][black_from[0]];
+                        let rook = board[0][7];
+                        board[0][7] = "";
+                        board[black_from[1]][black_from[0]] = "";
+                        piece.x = black_to[0];
+                        piece.y = black_to[1];
+                        rook.x = 5;
+                        rook.y = 0;
+                        board[0][5] = rook;
+                        board[black_to[1]][black_to[0]] = piece;
+
+                        output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                        output.sendMessage([144, coordinatesToDecimal(7, 0), 12]);
+                    } else {
+                        // Move the piece //
+                        let piece = board[black_from[1]][black_from[0]];
+                        piece.x = black_to[0];
+                        piece.y = black_to[1];
+                        board[black_from[1]][black_from[0]] = "";
+                        output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                        board[black_to[1]][black_to[0]] = piece;
+                    }
+
+                    // Swap whose turn it is //
+                    if(whose_turn === COLOUR.BLACK) whose_turn = COLOUR.WHITE; else whose_turn = COLOUR.BLACK;
+                    redraw();
+                }
             }
             break;
     }
@@ -511,5 +581,7 @@ axios.post("https://lichess.org/api/challenge/ai", {
 }).catch(err => {
     console.log(err)
 })
+
+redraw();
 
 process.on("beforeExit", () => output.closePort())
