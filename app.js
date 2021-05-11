@@ -352,6 +352,9 @@ input.on('message', (deltaTime, message) => {
                                     // Black promotes //
                                     console.log("Black pawn promotes");
                                     ask_promotion = true;
+                                } else if (selected_piece.eligible_for_en_passant) {
+                                    selected_piece.eligible_for_en_passant = false;
+                                    sendMove(algebraic_notation);
                                 } else {
                                     sendMove(algebraic_notation);
                                 }
