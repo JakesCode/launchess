@@ -1,6 +1,7 @@
 const midi = require('midi');
 const { PIECE_TYPES, COLOUR, BRIGHTNESS } = require('./classes/enums');
-const Piece = require('./classes/Piece');
+const Piece = require('./classes/Piece').Piece;
+const checkForCheckmate = require("./classes/Piece").checkForCheckmate;
 
 // Set up a new output.
 const input = new midi.Input();
@@ -85,7 +86,7 @@ const decimalToCoordinates = (d) => {
 }
 const redraw = (colour) => {
     if(colour) colour_filter = colour; else colour_filter = undefined;
-    output.sendMessage([176, 0, 0]);
+    // output.sendMessage([176, 0, 0]);
     for (let y = 0; y < board.length; y++) {
         for (let x = 0; x < board[y].length; x++) {
             const piece = board[y][x];
@@ -123,15 +124,28 @@ const blink = (positions, colour, blink_toggle = false) => {
     }
 }
 
+const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+const moveToNotation = (from, to) => {
+    // Convert the X coordinate to a file //
+    let from_file = files[from[0]];
+    let to_file = files[to[0]];
+
+    // Change the rank from 0-based to 1-based and then 'flip' it for white //
+    let from_one_based = (8 - (from[1] + 1)) + 1;
+    let to_one_based = (8 - (to[1] + 1)) + 1;
+
+    return from_file + from_one_based + to_file + to_one_based;
+};
+
 let whose_turn = COLOUR.WHITE;
 
 let selected_piece;
 input.on('message', (deltaTime, message) => {
     if(message[1] === 120) {
-        if(message[2] === 127) redraw(COLOUR.WHITE);
+        if(message[2] === 127) {output.sendMessage([176, 0, 0]); redraw(COLOUR.WHITE);}
         else redraw();
     } else if(message[1] === 8) {
-        if(message[2] === 127) redraw(COLOUR.BLACK);
+        if(message[2] === 127) {output.sendMessage([176, 0, 0]); redraw(COLOUR.BLACK);}
         else redraw();
     }
     else if(message[2] === 127) {
@@ -144,12 +158,60 @@ input.on('message', (deltaTime, message) => {
             if(chosen_moves.length > 0) {
                 // A move was actually chosen //
                 let chosen_move = chosen_moves[0];
-                board[selected_piece.y][selected_piece.x] = '';
-                selected_piece.x = chosen_move[0];
-                selected_piece.y = chosen_move[1];
-                board[chosen_move[1]][chosen_move[0]] = selected_piece;
-                redraw();
+                let algebraic_notation = moveToNotation([selected_piece.x, selected_piece.y], chosen_move);
+                
+                // Castling logic //
+                if(typeof(chosen_move[2]) === "string") {
+                    if(chosen_move[2].startsWith("castle")) {
+                        if(chosen_move[2] === "castle queenside") {
+                            let rook = board[7][0];
+                            rook.x = 3;
+                            rook.y = 7;
+                            selected_piece.x = 2;
+                            selected_piece.y = 7;
+                            board[7][0] = "";
+                            board[7][4] = "";
+                            board[7][2] = selected_piece;
+                            board[7][3] = rook;
+                        } else if(chosen_move[2] === "castle kingside") {
+                            let rook = board[7][7];
+                            rook.x = 5;
+                            rook.y = 7;
+                            selected_piece.x = 6;
+                            selected_piece.y = 7;
+                            board[7][7] = "";
+                            board[7][4] = "";
+                            board[7][6] = selected_piece;
+                            board[7][5] = rook;
+                        }
 
+                        // Revoke castling rights //
+                        selected_piece.castling_rights = false;
+                        board[selected_piece.y][selected_piece.x].castling_rights = false;
+                    }
+                } else {
+                    // Anything other than a castle //
+                    if(selected_piece.type === PIECE_TYPES.KING) {
+                        console.log(selected_piece.castling_rights);
+                        if(selected_piece.castling_rights) {
+                            // Revoke castling rights //
+                            selected_piece.castling_rights = false;
+                            board[selected_piece.y][selected_piece.x].castling_rights = false;
+                        }
+                    }
+
+                    board[selected_piece.y][selected_piece.x] = "";
+                    selected_piece.x = chosen_move[0];
+                    selected_piece.y = chosen_move[1];
+                    board[chosen_move[1]][chosen_move[0]] = selected_piece;
+                    redraw();
+                }
+
+                console.log(algebraic_notation);
+                // Check for a checkmate //
+                checkForCheckmate((whose_turn === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK), board);
+
+                // Swap whose turn it is //
                 if(whose_turn === COLOUR.BLACK) whose_turn = COLOUR.WHITE; else whose_turn = COLOUR.BLACK;
             }
             selected_piece = undefined;
@@ -166,8 +228,8 @@ input.on('message', (deltaTime, message) => {
                             selected_piece = undefined;
                             redraw();
                         } else {
-                            // Put old piece back //
                             if(selected_piece) {
+                                // Put old piece back //
                                 output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), selected_piece.getColour()]);
                             }
 

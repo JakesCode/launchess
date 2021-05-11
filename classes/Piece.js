@@ -71,13 +71,40 @@ const validateMoves = (moves, piece, board) => {
     // If the king is in check - this move cannot be made //
     moves.forEach(move => {
         let board_copy = _.cloneDeep(board);
-        
+
         // Pretend to make the move //
         let piece_clone = _.cloneDeep(piece);
-        board_copy[piece_clone.y][piece_clone.x] = "";
-        piece_clone.x = move[0];
-        piece_clone.y = move[1];
-        board_copy[move[1]][move[0]] = piece_clone;
+
+        if(typeof(move[2]) === "string") {
+            if(move[2].startsWith("castle")) {
+                if(move[2] === "castle queenside") {
+                    let rook_clone = _.cloneDeep(board_copy[7][0]);
+                    board_copy[7][0] = "";
+                    board_copy[7][4] = "";
+                    piece_clone.x = 2;
+                    piece_clone.y = 7;
+                    rook_clone.x = 3;
+                    rook_clone.y = 7;
+                    board_copy[7][2] = piece_clone;
+                    board_copy[7][3] = rook_clone;
+                } else if(move[2] === "castle kingside") {
+                    let rook_clone = _.cloneDeep(board_copy[7][7]);
+                    board_copy[7][7] = "";
+                    board_copy[7][4] = "";
+                    piece_clone.x = 6;
+                    piece_clone.y = 7;
+                    rook_clone.x = 5;
+                    rook_clone.y = 7;
+                    board_copy[7][6] = piece_clone;
+                    board_copy[7][5] = rook_clone;
+                }
+            }
+        } else {
+            board_copy[piece_clone.y][piece_clone.x] = "";
+            piece_clone.x = move[0];
+            piece_clone.y = move[1];
+            board_copy[move[1]][move[0]] = piece_clone;
+        }
 
         // Get all the moves that the opposite side could make, should this move be made //
         let all_potential_moves = getAllMoves((piece.colour === COLOUR.WHITE ? COLOUR.BLACK : COLOUR.WHITE), board_copy);
@@ -101,6 +128,12 @@ const validateMoves = (moves, piece, board) => {
     return validatedMoves;
 }
 
+module.exports.checkForCheckmate = (colour, board) => {
+    // Run all moves for the other side.... if there is none, it's checkmate //
+    
+    // TODO //
+}
+
 // Strategies //
 const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
     // Receives the current position, and the board //
@@ -112,9 +145,11 @@ const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
     if(piece.colour === COLOUR.WHITE) {
         // Can we move up one //
         if(y-1 >= 0) {
-            moves.push([x, y-1]);
-            // If it's our first move we can move up two //
-            if(y === 6) if(!board[y-2][x]) moves.push([x, y-2]);
+            if(!board[y-1][x]) {
+                moves.push([x, y-1]);
+                // If it's our first move we can move up two //
+                if(y === 6) if(!board[y-2][x]) moves.push([x, y-2]);
+            }
         }
 
         if(y-1 >= 0 && x-1 >= 0) {
@@ -129,9 +164,12 @@ const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
     } else {
         // Can we move down one //
         if(y+1 <= 7) {
-            moves.push([x, y+1]);
-            // If it's our first move we can move down two //
-            if(y === 1) if(!board[y+2][x]) moves.push([x, y+2]);
+            if(!board[y+1][x]) {
+                moves.push([x, y+1]); 
+                // If it's our first move we can move down two //
+                if(y === 1) if(!board[y+2][x]) moves.push([x, y+2]); 
+            }
+           
         }
 
         if(y+1 <= 7 && x-1 >= 0) {
@@ -359,6 +397,19 @@ const KING_STRATEGY = (position, board, piece, skip_scan = false) => {
     if(y+1 <= 7) if(!board[y+1][x]) { moves.push([x, y+1]) } else if(board[y+1][x].colour === (piece.colour === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK)) moves.push([x, y+1]);
     if(y+1 <= 7 && x-1 >= 0) if(!board[y+1][x-1]) { moves.push([x-1, y+1]) } else if(board[y+1][x-1].colour === (piece.colour === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK)) moves.push([x-1, y+1]);
 
+    // Castling //
+    if(skip_scan === false && piece.colour === COLOUR.WHITE) {
+        if(piece.castling_rights) {
+            if(board[7][0]) if(board[7][0].colour === COLOUR.WHITE && board[7][0].castling_rights) {
+                if(!board[7][1] && !board[7][2] && !board[7][3]) moves.push([2, 7, "castle queenside"]);
+            } 
+
+            if(board[7][7]) if(board[7][7].colour === COLOUR.WHITE && board[7][7].castling_rights) {
+                if(!board[7][5] && !board[7][6]) moves.push([6, 7, "castle kingside"]);
+            }
+        }
+    }
+    
     if(!skip_scan) moves = validateMoves(moves, piece, board);
     
     const remove = (move) => {
@@ -483,4 +534,4 @@ const KING_STRATEGY = (position, board, piece, skip_scan = false) => {
     return moves;
 }
 
-module.exports = Piece;
+module.exports.Piece = Piece;
