@@ -136,14 +136,16 @@ const blink = (positions, colour, blink_toggle = false) => {
 }
 
 const sendMove = (move) => {
-    // Send this move to the game //
-    fetch("https://lichess.org/api/bot/game/" + game_id + "/move/" + move, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + process.env.LICHESS_API_KEY
-        }
-    })
+    if(process.env.DEBUG.toString() !== "true") {
+        // Send this move to the game //
+        fetch("https://lichess.org/api/bot/game/" + game_id + "/move/" + move, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + process.env.LICHESS_API_KEY
+            }
+        }).then(result => console.log(result.data))
+    }
 }
 
 const show_promotion = () => {
@@ -213,7 +215,7 @@ input.on('message', (deltaTime, message) => {
         else redraw();
     }
     else if(game_id) {
-        if(whose_turn === COLOUR.WHITE) {
+        if(process.env.DEBUG === "true" || whose_turn === COLOUR.WHITE) {
             if(ask_promotion) {
                 if(message[2] === 127)  {
                     let coords_pressed = decimalToCoordinates(message[1]);
@@ -298,13 +300,35 @@ input.on('message', (deltaTime, message) => {
                                 board[selected_piece.y][selected_piece.x].castling_rights = false;
                             } else if (chosen_move[2] === "double") {
                                 // Double pawn move - open to en passant //
-                                selected_piece.eligible_for_en_passant = true;
+                                // Look for enemy pawns to the left and right //
+                                // If there are any - they are eligible to en passant next move //
+                                let x = chosen_move[0];
+                                let y = chosen_move[1];
+
+                                if(x-1 >= 0) {
+                                    if(board[y][x-1]) if(board[y][x-1].colour === (selected_piece.colour === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK) && board[y][x-1].type === PIECE_TYPES.PAWN) {
+                                        board[y][x-1].eligible_for_en_passant = true;
+                                    }
+                                }
+
+                                if(x+1 <= 7) {
+                                    if(board[y][x+1]) if(board[y][x+1].colour === (selected_piece.colour === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK) && board[y][x+1].type === PIECE_TYPES.PAWN) {
+                                        board[y][x+1].eligible_for_en_passant = true;
+                                    }
+                                }
+
                                 board[selected_piece.y][selected_piece.x] = "";
                                 selected_piece.x = chosen_move[0];
                                 selected_piece.y = chosen_move[1];
                                 board[chosen_move[1]][chosen_move[0]] = selected_piece;
                                 sendMove(algebraic_notation);
-                            } else if (chosen_move[2] === "en passant") {
+                            } else if (chosen_move[2].startsWith("en passant")) {
+                                board[selected_piece.y][chosen_move[2].endsWith("left") ? selected_piece.x-1 : selected_piece.x+1] = "";
+                                board[selected_piece.y][selected_piece.x] = "";
+                                output.sendMessage([144, coordinatesToDecimal(chosen_move[2].endsWith("left") ? selected_piece.x-1 : selected_piece.x+1, selected_piece.y), 12]);
+                                selected_piece.x = chosen_move[0];
+                                selected_piece.y = chosen_move[1];
+                                board[selected_piece.y][selected_piece.x] = selected_piece;
                                 // if(selected_piece.x-1 >= 0) {
                                 //     if(board[selected_piece.y][selected_piece.x-1].eligible_for_en_passant) {
                                 //         // Capture //
@@ -358,6 +382,7 @@ input.on('message', (deltaTime, message) => {
                                     console.log("Black pawn promotes");
                                     ask_promotion = true;
                                 } else if (selected_piece.eligible_for_en_passant) {
+                                    // Didn't take the opportunity - revoke the ability to en passant //
                                     selected_piece.eligible_for_en_passant = false;
                                     sendMove(algebraic_notation);
                                 } else {
@@ -552,43 +577,46 @@ const parseAPIResponse = (response) => {
 
 // 'Main' function here.... //
 console.log("Welcome to Launchess!");
-let game_id;
-axios.post("https://lichess.org/api/challenge/ai", {
-    level: 3,
-    color: "white" 
-}, {
-    headers: {
-        "Content-type": "application/json",
-        "Authorization": "Bearer " + process.env.LICHESS_API_KEY
-    }
-}).then(response => {
-    if(response.data) {
-        console.log("Game accepted by Lichess bot. Good luck!");
-        game_id = response.data.id;
-
-        // Join the game's stream //
-        fetch("https://lichess.org/api/bot/game/stream/" + game_id, {
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + process.env.LICHESS_API_KEY
-            }
-        }).then(response => response.body).then(stream => {
-            stream.on("readable", () => {
-                let chunk;
-                while (null !== (chunk = stream.read())) {
-                    chunk = chunk.toString();
-                    if(chunk !== "\n") {
-                        parseAPIResponse(JSON.parse(chunk));
-                    }
+if(process.env.DEBUG.toString() !== "true") {
+    let game_id;
+    axios.post("https://lichess.org/api/challenge/ai", {
+        level: 3,
+        color: "white" 
+    }, {
+        headers: {
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + process.env.LICHESS_API_KEY
+        }
+    }).then(response => {
+        if(response.data) {
+            console.log("Game accepted by Lichess bot. Good luck!");
+            game_id = response.data.id;
+    
+            // Join the game's stream //
+            fetch("https://lichess.org/api/bot/game/stream/" + game_id, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + process.env.LICHESS_API_KEY
                 }
-            })
-        });
-        redraw();
-    }
-}).catch(err => {
-    console.log(err)
-})
-
-redraw();
+            }).then(response => response.body).then(stream => {
+                stream.on("readable", () => {
+                    let chunk;
+                    while (null !== (chunk = stream.read())) {
+                        chunk = chunk.toString();
+                        if(chunk !== "\n") {
+                            parseAPIResponse(JSON.parse(chunk));
+                        }
+                    }
+                })
+            });
+            redraw();
+        }
+    }).catch(err => {
+        console.log(err)
+    })
+} else {
+    game_id = true;
+    redraw();
+}
 
 process.on("beforeExit", () => output.closePort())

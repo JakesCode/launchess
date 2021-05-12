@@ -15,6 +15,7 @@ class Piece {
         this.previous_x;
         this.previous_y;
         this.proposed_moves;
+        this.history = [];
 
         this.assign_strategy();
     }
@@ -173,16 +174,18 @@ const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
             if(board[y-1][x+1]) if(board[y-1][x+1].colour === COLOUR.BLACK) moves.push([x+1, y-1, true]);
         }
 
-        // // En passant //
-        // if(y === 3) {
-        //     if(board[y][x-1] && !board[y-1][x-1]) if(board[y][x-1].eligible_for_en_passant) {
-        //         moves.push([x-1, y, "en passant"]);
-        //     }
+        // En passant //
+        if(piece.eligible_for_en_passant) {
+            if(x-1 >= 0) if(board[y][x-1]) if(board[y][x-1].colour === COLOUR.BLACK && board[y][x-1].type === PIECE_TYPES.PAWN) {
+                // We can capture en passant //
+                moves.push([x-1, y-1, "en passant left"]);
+            }
 
-        //     if(board[y][x+1] && !board[y-1][x+1]) if(board[y][x+1].eligible_for_en_passant) {
-        //         moves.push([x+1, y, "en passant"]);
-        //     }
-        // }
+            if(x+1 <= 7) if(board[y][x+1]) if(board[y][x+1].colour === COLOUR.BLACK && board[y][x+1].type === PIECE_TYPES.PAWN) {
+                // We can capture en passant //
+                moves.push([x+1, y-1, "en passant right"]);
+            }
+        }    
     } else {
         // Can we move down one //
         if(y+1 <= 7) {
@@ -204,9 +207,12 @@ const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
         }
     }
 
-    // Now validate these moves or skip the validation (in case this function is called by another validation method - avoid recursion)
+    // Now validate these moves or skip the validation (in case this function is called by another validation method - avoid recursion) //
     if (!skip_scan) {
         moves = validateMoves(moves, piece, board);
+        if(piece.previous_x !== x || piece.previous_y !== y) {
+            piece.history.push([x, y]);
+        }
         piece.previous_x = x;
         piece.previous_y = y;
     }
@@ -269,7 +275,10 @@ const ROOK_STRATEGY = (position, board, piece, skip_scan = false) => {
         }
     }
 
-    if(!skip_scan) moves = validateMoves(moves, piece, board);
+    if(!skip_scan) {
+        moves = validateMoves(moves, piece, board);
+        piece.history.push([x, y]);
+    }
 
     piece.proposed_moves = moves;
     return moves;
@@ -377,7 +386,10 @@ const BISHOP_STRATEGY = (position, board, piece, skip_scan = false) => {
         } else cont = false;
     }
 
-    if(!skip_scan) moves = validateMoves(moves, piece, board);
+    if(!skip_scan) {
+        moves = validateMoves(moves, piece, board);
+        piece.history.push([x, y]);
+    }
 
     piece.proposed_moves = moves;
     return moves;
@@ -399,7 +411,10 @@ const QUEEN_STRATEGY = (position, board, piece, skip_scan = false) => {
         moves.push(element);
     })
 
-    if(!skip_scan) moves = validateMoves(moves, piece, board);
+    if(!skip_scan) {
+        moves = validateMoves(moves, piece, board);
+        piece.history.push([position[0], position[1]]);
+    }
 
     piece.proposed_moves = moves;
     return moves;
@@ -435,7 +450,10 @@ const KING_STRATEGY = (position, board, piece, skip_scan = false) => {
         }
     }
     
-    if(!skip_scan) moves = validateMoves(moves, piece, board);
+    if(!skip_scan) {
+        moves = validateMoves(moves, piece, board);
+        piece.history.push([x, y]);
+    }
     
     const remove = (move) => {
         moves = moves.filter(m => m.toString() !== move.toString());
