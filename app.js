@@ -305,33 +305,33 @@ input.on('message', (deltaTime, message) => {
                                 board[chosen_move[1]][chosen_move[0]] = selected_piece;
                                 sendMove(algebraic_notation);
                             } else if (chosen_move[2] === "en passant") {
-                                if(selected_piece.x-1 >= 0) {
-                                    if(board[selected_piece.y][selected_piece.x-1].eligible_for_en_passant) {
-                                        // Capture //
-                                        board[selected_piece.y][selected_piece.x-1] = "";
-                                        let piece = board[selected_piece.y][selected_piece.x];
-                                        board[selected_piece.y][selected_piece.x] = "";
-                                        output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), 12]);
-                                        piece.x = selected_piece.x-1;
-                                        piece.y = selected_piece.y-1;
-                                        board[selected_piece.y-1][selected_piece.x-1] = piece;
+                                // if(selected_piece.x-1 >= 0) {
+                                //     if(board[selected_piece.y][selected_piece.x-1].eligible_for_en_passant) {
+                                //         // Capture //
+                                //         board[selected_piece.y][selected_piece.x-1] = "";
+                                //         let piece = board[selected_piece.y][selected_piece.x];
+                                //         board[selected_piece.y][selected_piece.x] = "";
+                                //         output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), 12]);
+                                //         piece.x = selected_piece.x-1;
+                                //         piece.y = selected_piece.y-1;
+                                //         board[selected_piece.y-1][selected_piece.x-1] = piece;
 
-                                        sendMove(algebraic_notation);
-                                    }
-                                } else if(selected_piece.x+1 <= 7) {
-                                    if(board[selected_piece.y][selected_piece.x+1].eligible_for_en_passant) {
-                                        // Capture //
-                                        board[selected_piece.y][selected_piece.x+1] = "";
-                                        let piece = board[selected_piece.y][selected_piece.x];
-                                        board[selected_piece.y][selected_piece.x] = "";
-                                        output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), 12]);
-                                        piece.x = selected_piece.x+1;
-                                        piece.y = selected_piece.y-1;
-                                        board[selected_piece.y-1][selected_piece.x+1] = piece;
+                                //         sendMove(algebraic_notation);
+                                //     }
+                                // } else if(selected_piece.x+1 <= 7) {
+                                //     if(board[selected_piece.y][selected_piece.x+1].eligible_for_en_passant) {
+                                //         // Capture //
+                                //         board[selected_piece.y][selected_piece.x+1] = "";
+                                //         let piece = board[selected_piece.y][selected_piece.x];
+                                //         board[selected_piece.y][selected_piece.x] = "";
+                                //         output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), 12]);
+                                //         piece.x = selected_piece.x+1;
+                                //         piece.y = selected_piece.y-1;
+                                //         board[selected_piece.y-1][selected_piece.x+1] = piece;
 
-                                        sendMove(algebraic_notation);
-                                    }
-                                }
+                                //         sendMove(algebraic_notation);
+                                //     }
+                                // }
                             }
                         } else {
                             // Anything other than a castle //

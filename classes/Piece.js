@@ -173,16 +173,16 @@ const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
             if(board[y-1][x+1]) if(board[y-1][x+1].colour === COLOUR.BLACK) moves.push([x+1, y-1, true]);
         }
 
-        // En passant //
-        if(y === 3) {
-            if(board[y][x-1] && !board[y-1][x-1]) if(board[y][x-1].eligible_for_en_passant) {
-                moves.push([x-1, y, "en passant"]);
-            }
+        // // En passant //
+        // if(y === 3) {
+        //     if(board[y][x-1] && !board[y-1][x-1]) if(board[y][x-1].eligible_for_en_passant) {
+        //         moves.push([x-1, y, "en passant"]);
+        //     }
 
-            if(board[y][x+1] && !board[y-1][x+1]) if(board[y][x+1].eligible_for_en_passant) {
-                moves.push([x+1, y, "en passant"]);
-            }
-        }
+        //     if(board[y][x+1] && !board[y-1][x+1]) if(board[y][x+1].eligible_for_en_passant) {
+        //         moves.push([x+1, y, "en passant"]);
+        //     }
+        // }
     } else {
         // Can we move down one //
         if(y+1 <= 7) {
