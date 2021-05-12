@@ -78,6 +78,8 @@ const getAllMoves = (colour, board) => {
 
 const validateMoves = (moves, piece, board) => {
     let validatedMoves = [];
+    let block_queenside_castling = false;
+    let block_kingside_castling = false;
 
     // For each proposed move - simulate the board as if that move had been made //
     // If the king is in check - this move cannot be made //
@@ -128,21 +130,63 @@ const validateMoves = (moves, piece, board) => {
         } else {
             king = piece_clone;
         }
-        let king_check = all_potential_moves.filter(move => move[0] === king.x && move[1] === king.y);
+        let king_check = all_potential_moves.filter(potential_move => potential_move[0] === king.x && potential_move[1] === king.y);
         
         if(king_check.length > 0) {
             // King would be in check - move should not be allowed //
+            // Remove any castles //
+            block_queenside_castling = true;
+            block_kingside_castling = true;
         } else {
-            validatedMoves.push(move);
+            if(move[2] === "queenside castling check") {
+                if(!block_queenside_castling) {
+                    if(all_potential_moves.filter(potential_move => potential_move[0] === move[0] && potential_move[1] === move[1]).length > 0) {
+                        // We'd be passing through enemy territory - castling not allowed! //
+                        // Block ALL future castling checks //
+                        block_queenside_castling = true;
+                    } else {
+                        validatedMoves.push(move);
+                    }
+                }
+            } else if(move[2] === "kingside castling check") {
+                if(!block_kingside_castling) {
+                    if(all_potential_moves.filter(potential_move => potential_move[0] === move[0] && potential_move[1] === move[1]).length > 0) {
+                        // We'd be passing through enemy territory - castling not allowed! //
+                        // Block ALL future castling checks //
+                        block_kingside_castling = true;
+                    } else {
+                        validatedMoves.push(move);
+                    }
+                }
+            } else {
+                validatedMoves.push(move);
+            }
         }
     });
+
+    // Castling //
+    let filtered_queenside_checks = validatedMoves.filter(move => move[2] === "queenside castling check");
+    let filtered_kingside_checks = validatedMoves.filter(move => move[2] === "kingside castling check");
+    if(filtered_queenside_checks.length === 4) {
+        // We're good - remove the checks and keep the castle //
+        validatedMoves = validatedMoves.filter(move => move[2] !== "queenside castling check")
+    } else if (filtered_queenside_checks.length > 0 || block_queenside_castling) {
+        // Remove them all, including the castling move //
+        validatedMoves = validatedMoves.filter(move => move[2] !== "queenside castling check" && move[2] !== "castle queenside")
+    }
+
+    if(filtered_kingside_checks.length === 3) {
+        // We're good - remove the checks and keep the castle //
+        validatedMoves = validatedMoves.filter(move => move[2] !== "kingside castling check")
+    } else if (filtered_kingside_checks.length > 0 || block_kingside_castling) {
+        // Remove them all, including the castling move //
+        validatedMoves = validatedMoves.filter(move => move[2] !== "kingside castling check" && move[2] !== "castle kingside")
+    }
 
     return validatedMoves;
 }
 
 module.exports.checkForCheckmate = (colour, board) => {
-    // Run all moves for the other side.... if there is none, it's checkmate //
-    
     // TODO //
 }
 
@@ -438,18 +482,31 @@ const KING_STRATEGY = (position, board, piece, skip_scan = false) => {
     if(y+1 <= 7) if(!board[y+1][x]) { moves.push([x, y+1]) } else if(board[y+1][x].colour === (piece.colour === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK)) moves.push([x, y+1]);
     if(y+1 <= 7 && x-1 >= 0) if(!board[y+1][x-1]) { moves.push([x-1, y+1]) } else if(board[y+1][x-1].colour === (piece.colour === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK)) moves.push([x-1, y+1]);
 
-    // Castling //
-    // if(skip_scan === false && piece.colour === COLOUR.WHITE) {
-    //     if(piece.castling_rights) {
-    //         if(board[7][0]) if(board[7][0].colour === COLOUR.WHITE && board[7][0].castling_rights) {
-    //             if(!board[7][1] && !board[7][2] && !board[7][3]) moves.push([2, 7, "castle queenside"]);
-    //         } 
+    if(piece.colour === COLOUR.WHITE) {
+        // Castling //
+        // Both the rook and the king must have castling rights //
+        
+        // Queenside //
+        if(board[7][0]) if(board[7][0].type === PIECE_TYPES.ROOK && board[7][0].castling_rights) {
+            if(!board[7][1] && !board[7][2] && !board[7][3]) {
+                moves.push([0, 7, "queenside castling check"]);
+                moves.push([1, 7, "queenside castling check"]);
+                moves.push([2, 7, "queenside castling check"]);
+                moves.push([3, 7, "queenside castling check"]);
+                moves.push([2, 7, "castle queenside"]);
+            }
+        }
 
-    //         if(board[7][7]) if(board[7][7].colour === COLOUR.WHITE && board[7][7].castling_rights) {
-    //             if(!board[7][5] && !board[7][6]) moves.push([6, 7, "castle kingside"]);
-    //         }
-    //     }
-    // }
+        // Kingside //
+        if(board[7][7]) if(board[7][7].type === PIECE_TYPES.ROOK && board[7][7].castling_rights) {
+            if(!board[7][5] && !board[7][6]) {
+                moves.push([5, 7, "kingside castling check"]);
+                moves.push([6, 7, "kingside castling check"]);
+                moves.push([7, 7, "kingside castling check"]);
+                moves.push([6, 7, "castle kingside"]);
+            }
+        }
+    }
     
     if(!skip_scan) {
         moves = validateMoves(moves, piece, board);

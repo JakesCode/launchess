@@ -30,51 +30,51 @@ output.openPort(launchpadOut);
 output.sendMessage([176, 0, 0]);
 
 let board_origin = [
-    [
-      new Piece(PIECE_TYPES.ROOK, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.KNIGHT, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.BISHOP, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.QUEEN, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.KING, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.BISHOP, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.KNIGHT, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.ROOK, COLOUR.BLACK),
-    ],
-    [
-      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-    ],
-    ["", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", ""],
-    [
-      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
-    ],
-    [
-      new Piece(PIECE_TYPES.ROOK, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.KNIGHT, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.BISHOP, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.QUEEN, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.KING, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.BISHOP, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.KNIGHT, COLOUR.WHITE),
-      new Piece(PIECE_TYPES.ROOK, COLOUR.WHITE),
-    ],
-  ];
+  [
+    new Piece(PIECE_TYPES.ROOK, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.KNIGHT, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.BISHOP, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.QUEEN, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.KING, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.BISHOP, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.KNIGHT, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.ROOK, COLOUR.BLACK),
+  ],
+  [
+    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+  ],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  [
+    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+  ],
+  [
+    new Piece(PIECE_TYPES.ROOK, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.KNIGHT, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.BISHOP, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.QUEEN, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.KING, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.BISHOP, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.KNIGHT, COLOUR.WHITE),
+    new Piece(PIECE_TYPES.ROOK, COLOUR.WHITE),
+  ],
+];
 
 let board = _.cloneDeep(board_origin);
 
@@ -378,6 +378,7 @@ input.on('message', (deltaTime, message) => {
                         redraw();
                     }
                 } else {
+                    // User pressed somewhere else other than the options they've got, or they've pressed a new piece //
                     if(pos[0] >= 0 && pos[0] <= 8 && pos[1] >= 0 && pos[1] <= 8) {
                         let x = pos[0];
                         let y = pos[1];
@@ -678,10 +679,10 @@ if(process.env.DEBUG.toString() !== "true") {
 } else {
     game_id = true;
     redraw();
-    parseAPIResponse({
-        type: "gameState",
-        moves: "a2a4 e4f5"
-    })
+    // parseAPIResponse({
+    //     type: "gameState",
+    //     moves: "a2a4 e4f5"
+    // })
 }
 
 process.on("beforeExit", () => output.closePort())
