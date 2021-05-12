@@ -551,19 +551,22 @@ const parseAPIResponse = (response) => {
                         output.sendMessage([144, coordinatesToDecimal(7, 0), 12]);
                     } else {
                         // Check for en passant //
-                        if(black_to[1] - 1 >= 0) {
-                            if(board[black_to[1] - 1][black_to[0]]) if(board[black_to[1] - 1][black_to[0]].colour === COLOUR.WHITE && board[black_to[1] - 1][black_to[0]].eligible_for_en_passant) {
-                                board[black_to[1] - 1][black_to[0]] = "";
+                        if(black_to[1] === 5) {
+                            if(board[black_to[1]-1][black_to[0]]) {
+                                let white_piece = board[black_to[1]-1][black_to[0]];
+                                if(white_piece.colour === COLOUR.WHITE && white_piece.type === PIECE_TYPES.PAWN) {
+                                    // We've been taken via en passant //
+                                    board[black_to[1]-1][black_to[0]] = "";
+    
+                                    let piece = board[black_from[1]][black_from[0]];
+                                    piece.x = black_to[0];
+                                    piece.y = black_to[1];
+                                    board[black_from[1]][black_from[0]] = "";
+                                    board[black_to[1]][black_to[0]] = piece;
+                                    output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                                }
                             }
                         }
-
-                        // Move the piece //
-                        let piece = board[black_from[1]][black_from[0]];
-                        piece.x = black_to[0];
-                        piece.y = black_to[1];
-                        board[black_from[1]][black_from[0]] = "";
-                        output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
-                        board[black_to[1]][black_to[0]] = piece;
                     }
 
                     // Swap whose turn it is //
