@@ -1,6 +1,11 @@
 const { PIECE_TYPES, COLOUR } = require("./enums");
 const _ = require("lodash");
 
+// CURRENT BUGS //
+// En passant implemented wrong //
+// Castling logic implemented wrong //
+// Black promotion not added yet //
+
 class Piece {
     constructor(type, colour) {
         this.type = type;
