@@ -187,7 +187,6 @@ const moveToNotation = (from, to, promotion) => {
 const notationToMove = (notation) => {
     // e.g. b8c6 //
     // We need to turn b8 into 1,0 and c6 into 2,2 //
-
     let from = notation.substring(0, 2).split("");
     let to = notation.substring(2, 4).split("");
 
@@ -200,7 +199,10 @@ const notationToMove = (notation) => {
     let converted_from = [eval(from_file), eval(from_zero_based)];
     let converted_to = [eval(to_file), eval(to_zero_based)];
 
-    return [converted_from, converted_to];
+    let result = [converted_from, converted_to];
+    if(notation.length === 5) result.push(notation[4]);
+
+    return result;
 }
 
 let whose_turn = COLOUR.WHITE;
@@ -480,7 +482,6 @@ const parseAPIResponse = (response) => {
             let black_from = converted_black_move[0];
             let black_to = converted_black_move[1];
             let piece = board[black_from[1]][black_from[0]];
-            let taken_piece = board[black_to[1]][black_to[1]];
 
             const blink_move = (special_case, callback) => {
                 // Idea of this function is to 'blink a move' //
@@ -490,7 +491,6 @@ const parseAPIResponse = (response) => {
                             case 0:
                             case 2:
                                 output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
-                                // if(taken_piece) output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), 12]);
                                 if(special_case) {
                                     if(special_case === "castle queenside") {
                                         output.sendMessage([144, coordinatesToDecimal(0, 0), 12]);
@@ -506,7 +506,6 @@ const parseAPIResponse = (response) => {
                                 break;
                             case 1:
                                 output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), piece.getColour()]);
-                                // if(taken_piece) output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), taken_piece.getColour()]);
                                 if(special_case) {
                                     if(special_case === "castle queenside") {
                                         output.sendMessage([144, coordinatesToDecimal(0, 0), board[0][3].getColour()]);
@@ -523,7 +522,6 @@ const parseAPIResponse = (response) => {
                             case 3:
                             case 5:
                                 output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), piece.getColour()]);
-                                // if(taken_piece) output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), piece.getColour()]);
                                 if(special_case) {
                                     if(special_case === "castle queenside") {
                                         output.sendMessage([144, coordinatesToDecimal(3, 0), board[0][3].getColour()]);
@@ -587,6 +585,25 @@ const parseAPIResponse = (response) => {
             } else {
                 // Check for en passant //
                 const normal_move = () => {
+                    // Check for promotion //
+                    if(converted_black_move[2]) {
+                        switch(converted_black_move[2]) {
+                            case "q":
+                                piece.type = PIECE_TYPES.QUEEN;
+                                break;
+                            case "b":
+                                piece.type = PIECE_TYPES.BISHOP;
+                                break;
+                            case "r":
+                                piece.type = PIECE_TYPES.ROOK;
+                                break;
+                            case "n":
+                                piece.type = PIECE_TYPES.KNIGHT;
+                                break;
+                        }
+                        piece.assign_strategy();
+                    }
+
                     piece.x = black_to[0];
                     piece.y = black_to[1];
                     board[black_from[1]][black_from[0]] = "";
@@ -679,10 +696,10 @@ if(process.env.DEBUG.toString() !== "true") {
 } else {
     game_id = true;
     redraw();
-    // parseAPIResponse({
-    //     type: "gameState",
-    //     moves: "a2a4 e4f5"
-    // })
+    parseAPIResponse({
+        type: "gameState",
+        moves: "a2a4 h2g1q"
+    })
 }
 
 process.on("beforeExit", () => output.closePort())
