@@ -4,10 +4,7 @@ const _ = require("lodash");
 // CURRENT BUGS //
 // Castling logic implemented wrong //
 // Black promotion not added yet //
-// If a pawn can't move up one as a result of putting the king in check, it also shouldn't be allowed to move up two //
-
-// IMPROVEMENTS //
-// 'Show' the move about to happen by fading out all pieces except the enemy piece and showing the move //
+// If a pawn can't move up one as a result of putting the king in check, it also shouldn't be allowed to move up two (think I've fixed it, but not tested yet) //
 
 class Piece {
     constructor(type, colour) {

@@ -42,7 +42,7 @@ let board_origin = [
     ],
     [
       new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-      "",
+      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
       new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
       new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
       new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
@@ -52,10 +52,10 @@ let board_origin = [
     ],
     ["", "", "", "", "", "", "", ""],
     ["", "", "", "", "", "", "", ""],
-    [new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE), new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK), "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", ""],
     ["", "", "", "", "", "", "", ""],
     [
-      "",
+        new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
       new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
       new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
       new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
