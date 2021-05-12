@@ -2,9 +2,7 @@ const { PIECE_TYPES, COLOUR } = require("./enums");
 const _ = require("lodash");
 
 // CURRENT BUGS //
-// Castling logic implemented wrong //
 // Black promotion not added yet //
-// If a pawn can't move up one as a result of putting the king in check, it also shouldn't be allowed to move up two (think I've fixed it, but not tested yet) //
 
 class Piece {
     constructor(type, colour) {
@@ -175,6 +173,14 @@ const validateMoves = (moves, piece, board) => {
         validatedMoves = validatedMoves.filter(move => move[2] !== "queenside castling check" && move[2] !== "castle queenside")
     }
 
+    // Remove illegal double pawn move //
+    let double_move = validatedMoves.filter(move => move[2] === "double");
+    if(double_move.length > 0) {
+        if(validatedMoves.filter(move => move[0] === double_move[0][0] && move[1] === double_move[0][1] + 1).length === 0) {
+            validatedMoves = validatedMoves.filter(move => move[2] !== "double");
+        }
+    }
+
     if(filtered_kingside_checks.length === 3) {
         // We're good - remove the checks and keep the castle //
         validatedMoves = validatedMoves.filter(move => move[2] !== "kingside castling check")
@@ -254,10 +260,6 @@ const PAWN_STRATEGY = (position, board, piece, skip_scan = false) => {
     // Now validate these moves or skip the validation (in case this function is called by another validation method - avoid recursion) //
     if (!skip_scan) {
         moves = validateMoves(moves, piece, board);
-        if(y === 6 && moves.length === 1) if(moves[0][1] === y-2) moves = [];
-        if(piece.previous_x !== x || piece.previous_y !== y) {
-            piece.history.push([x, y]);
-        }
         piece.previous_x = x;
         piece.previous_y = y;
     }
