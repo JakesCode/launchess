@@ -539,6 +539,15 @@ const parseAPIResponse = (response) => {
                 output.sendMessage([144, coordinatesToDecimal(7, 0), 12]);
             } else {
                 // Check for en passant //
+                const normal_move = () => {
+                    let piece = board[black_from[1]][black_from[0]];
+                    piece.x = black_to[0];
+                    piece.y = black_to[1];
+                    board[black_from[1]][black_from[0]] = "";
+                    board[black_to[1]][black_to[0]] = piece;
+                    output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                }
+
                 if(black_to[1] === 5) {
                     if(board[black_to[1]-1][black_to[0]]) {
                         let white_piece = board[black_to[1]-1][black_to[0]];
@@ -552,16 +561,9 @@ const parseAPIResponse = (response) => {
                             board[black_from[1]][black_from[0]] = "";
                             board[black_to[1]][black_to[0]] = piece;
                             output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
-                        }
-                    }
-                } else {
-                    let piece = board[black_from[1]][black_from[0]];
-                    piece.x = black_to[0];
-                    piece.y = black_to[1];
-                    board[black_from[1]][black_from[0]] = "";
-                    board[black_to[1]][black_to[0]] = piece;
-                    output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
-                }
+                        } else normal_move();
+                    } else normal_move();
+                } else normal_move();
             }
 
             // Swap whose turn it is //
@@ -591,7 +593,7 @@ console.log("Welcome to Launchess!");
 let game_id;
 if(process.env.DEBUG.toString() !== "true") {
     axios.post("https://lichess.org/api/challenge/ai", {
-        level: 3,
+        level: 5,
         color: "white" 
     }, {
         headers: {

@@ -439,17 +439,17 @@ const KING_STRATEGY = (position, board, piece, skip_scan = false) => {
     if(y+1 <= 7 && x-1 >= 0) if(!board[y+1][x-1]) { moves.push([x-1, y+1]) } else if(board[y+1][x-1].colour === (piece.colour === COLOUR.BLACK ? COLOUR.WHITE : COLOUR.BLACK)) moves.push([x-1, y+1]);
 
     // Castling //
-    if(skip_scan === false && piece.colour === COLOUR.WHITE) {
-        if(piece.castling_rights) {
-            if(board[7][0]) if(board[7][0].colour === COLOUR.WHITE && board[7][0].castling_rights) {
-                if(!board[7][1] && !board[7][2] && !board[7][3]) moves.push([2, 7, "castle queenside"]);
-            } 
+    // if(skip_scan === false && piece.colour === COLOUR.WHITE) {
+    //     if(piece.castling_rights) {
+    //         if(board[7][0]) if(board[7][0].colour === COLOUR.WHITE && board[7][0].castling_rights) {
+    //             if(!board[7][1] && !board[7][2] && !board[7][3]) moves.push([2, 7, "castle queenside"]);
+    //         } 
 
-            if(board[7][7]) if(board[7][7].colour === COLOUR.WHITE && board[7][7].castling_rights) {
-                if(!board[7][5] && !board[7][6]) moves.push([6, 7, "castle kingside"]);
-            }
-        }
-    }
+    //         if(board[7][7]) if(board[7][7].colour === COLOUR.WHITE && board[7][7].castling_rights) {
+    //             if(!board[7][5] && !board[7][6]) moves.push([6, 7, "castle kingside"]);
+    //         }
+    //     }
+    // }
     
     if(!skip_scan) {
         moves = validateMoves(moves, piece, board);
