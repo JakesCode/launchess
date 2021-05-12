@@ -42,7 +42,7 @@ let board_origin = [
     ],
     [
       new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
-      new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
+      "",
       new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
       new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
       new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK),
@@ -52,10 +52,10 @@ let board_origin = [
     ],
     ["", "", "", "", "", "", "", ""],
     ["", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", ""],
+    [new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE), new Piece(PIECE_TYPES.PAWN, COLOUR.BLACK), "", "", "", "", "", ""],
     ["", "", "", "", "", "", "", ""],
     [
-      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+      "",
       new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
       new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
       new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
@@ -497,7 +497,6 @@ const checkmate_ending = (win) => {
 
 const parseAPIResponse = (response) => {
     if(response.type === "gameState") {
-        // The one we want! //
         // Parse the 'moves' string //
         let splitMoves = response.moves.split(" ");
         if(splitMoves.length % 2 === 0) {
@@ -506,10 +505,83 @@ const parseAPIResponse = (response) => {
             let converted_black_move = notationToMove(black_move);
             let black_from = converted_black_move[0];
             let black_to = converted_black_move[1];
+            let piece = board[black_from[1]][black_from[0]];
+
+            const blink_move = (special_case, callback) => {
+                // Idea of this function is to 'blink a move' //
+                let blink = (increment) => {
+                    setTimeout(() => {
+                        switch(increment) {
+                            case 0:
+                            case 2:
+                                output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                                if(special_case) {
+                                    if(special_case === "castle queenside") {
+                                        output.sendMessage([144, coordinatesToDecimal(0, 0), 12]);
+                                    }
+                                    if(special_case === "castle kingside") {
+                                        output.sendMessage([144, coordinatesToDecimal(7, 0), 12]);
+                                    }
+                                    if(special_case === "en passant") {
+                                        output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]-1), 12]);
+                                    }
+                                }
+                                blink(increment + 1);
+                                break;
+                            case 1:
+                                output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), piece.getColour()]);
+                                if(special_case) {
+                                    if(special_case === "castle queenside") {
+                                        output.sendMessage([144, coordinatesToDecimal(0, 0), board[0][3].getColour()]);
+                                    }
+                                    if(special_case === "castle kingside") {
+                                        output.sendMessage([144, coordinatesToDecimal(7, 0), board[0][5].getColour()]);
+                                    }
+                                    if(special_case === "en passant") {
+                                        output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]-1), 13]);
+                                    }
+                                }
+                                blink(increment + 1);
+                                break;
+                            case 3:
+                            case 5:
+                                output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), piece.getColour()]);
+                                if(special_case) {
+                                    if(special_case === "castle queenside") {
+                                        output.sendMessage([144, coordinatesToDecimal(3, 0), board[0][3].getColour()]);
+                                    }
+                                    if(special_case === "castle kingside") {
+                                        output.sendMessage([144, coordinatesToDecimal(5, 0), board[0][5].getColour()]);
+                                    }
+                                    if(special_case === "en passant") {
+                                        output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]-1), 12]);
+                                    }
+                                }
+                                blink(increment + 1);
+                                break;
+                            case 4:
+                                output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), 12]);
+                                if(special_case) {
+                                    if(special_case === "castle queenside") {
+                                        output.sendMessage([144, coordinatesToDecimal(3, 0), 12]);
+                                    }
+                                    if(special_case === "castle kingside") {
+                                        output.sendMessage([144, coordinatesToDecimal(5, 0), 12]);
+                                    }
+                                    if(special_case === "en passant") {
+                                        output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]-1), 12]);
+                                    }
+                                }
+                                blink(increment + 1);
+                                break;
+                        }
+                    }, 150);
+                }
+                blink(0);
+            }
 
             if(black_move === "e8c8") {
                 // Black has castled queenside //
-                let piece = board[black_from[1]][black_from[0]];
                 let rook = board[0][0];
                 board[0][0] = "";
                 board[black_from[1]][black_from[0]] = "";
@@ -520,11 +592,9 @@ const parseAPIResponse = (response) => {
                 board[0][3] = rook;
                 board[black_to[1]][black_to[0]] = piece;
 
-                output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
-                output.sendMessage([144, coordinatesToDecimal(0, 0), 12]);
+                blink_move("castle queenside", () => redraw());
             } else if(black_move === "e8g8") {
                 // Black has castled kingside //
-                let piece = board[black_from[1]][black_from[0]];
                 let rook = board[0][7];
                 board[0][7] = "";
                 board[black_from[1]][black_from[0]] = "";
@@ -535,17 +605,17 @@ const parseAPIResponse = (response) => {
                 board[0][5] = rook;
                 board[black_to[1]][black_to[0]] = piece;
 
-                output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
-                output.sendMessage([144, coordinatesToDecimal(7, 0), 12]);
+                blink_move("castle kingside", () => redraw());
             } else {
                 // Check for en passant //
                 const normal_move = () => {
-                    let piece = board[black_from[1]][black_from[0]];
                     piece.x = black_to[0];
                     piece.y = black_to[1];
                     board[black_from[1]][black_from[0]] = "";
                     board[black_to[1]][black_to[0]] = piece;
                     output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+
+                    blink_move(null, () => redraw());
                 }
 
                 if(black_to[1] === 5) {
@@ -560,6 +630,8 @@ const parseAPIResponse = (response) => {
                             piece.y = black_to[1];
                             board[black_from[1]][black_from[0]] = "";
                             board[black_to[1]][black_to[0]] = piece;
+
+                            blink_move("en passant", () => redraw());
                             output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
                         } else normal_move();
                     } else normal_move();
@@ -568,7 +640,6 @@ const parseAPIResponse = (response) => {
 
             // Swap whose turn it is //
             if(whose_turn === COLOUR.BLACK) whose_turn = COLOUR.WHITE; else whose_turn = COLOUR.BLACK;
-            redraw();
         }
 
         if(response.winner) {
@@ -593,7 +664,7 @@ console.log("Welcome to Launchess!");
 let game_id;
 if(process.env.DEBUG.toString() !== "true") {
     axios.post("https://lichess.org/api/challenge/ai", {
-        level: 5,
+        level: 1,
         color: "white" 
     }, {
         headers: {
@@ -630,6 +701,10 @@ if(process.env.DEBUG.toString() !== "true") {
 } else {
     game_id = true;
     redraw();
+    parseAPIResponse({
+        type: "gameState",
+        moves: "a2a4 b4a3"
+    })
 }
 
 process.on("beforeExit", () => output.closePort())
