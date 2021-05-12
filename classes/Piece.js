@@ -5,6 +5,7 @@ const _ = require("lodash");
 // En passant implemented wrong //
 // Castling logic implemented wrong //
 // Black promotion not added yet //
+// If a pawn can't move up one as a result of putting the king in check, it also shouldn't be allowed to move up two //
 
 class Piece {
     constructor(type, colour) {
