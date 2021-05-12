@@ -55,7 +55,7 @@ let board_origin = [
     ["", "", "", "", "", "", "", ""],
     ["", "", "", "", "", "", "", ""],
     [
-        new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
+      new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
       new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
       new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
       new Piece(PIECE_TYPES.PAWN, COLOUR.WHITE),
@@ -329,33 +329,6 @@ input.on('message', (deltaTime, message) => {
                                 selected_piece.x = chosen_move[0];
                                 selected_piece.y = chosen_move[1];
                                 board[selected_piece.y][selected_piece.x] = selected_piece;
-                                // if(selected_piece.x-1 >= 0) {
-                                //     if(board[selected_piece.y][selected_piece.x-1].eligible_for_en_passant) {
-                                //         // Capture //
-                                //         board[selected_piece.y][selected_piece.x-1] = "";
-                                //         let piece = board[selected_piece.y][selected_piece.x];
-                                //         board[selected_piece.y][selected_piece.x] = "";
-                                //         output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), 12]);
-                                //         piece.x = selected_piece.x-1;
-                                //         piece.y = selected_piece.y-1;
-                                //         board[selected_piece.y-1][selected_piece.x-1] = piece;
-
-                                //         sendMove(algebraic_notation);
-                                //     }
-                                // } else if(selected_piece.x+1 <= 7) {
-                                //     if(board[selected_piece.y][selected_piece.x+1].eligible_for_en_passant) {
-                                //         // Capture //
-                                //         board[selected_piece.y][selected_piece.x+1] = "";
-                                //         let piece = board[selected_piece.y][selected_piece.x];
-                                //         board[selected_piece.y][selected_piece.x] = "";
-                                //         output.sendMessage([144, coordinatesToDecimal(selected_piece.x, selected_piece.y), 12]);
-                                //         piece.x = selected_piece.x+1;
-                                //         piece.y = selected_piece.y-1;
-                                //         board[selected_piece.y-1][selected_piece.x+1] = piece;
-
-                                //         sendMove(algebraic_notation);
-                                //     }
-                                // }
                             }
                         } else {
                             // Anything other than a castle //
@@ -506,6 +479,7 @@ const parseAPIResponse = (response) => {
             let black_from = converted_black_move[0];
             let black_to = converted_black_move[1];
             let piece = board[black_from[1]][black_from[0]];
+            let taken_piece = board[black_to[1]][black_to[1]];
 
             const blink_move = (special_case, callback) => {
                 // Idea of this function is to 'blink a move' //
@@ -515,6 +489,7 @@ const parseAPIResponse = (response) => {
                             case 0:
                             case 2:
                                 output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), 12]);
+                                // if(taken_piece) output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), 12]);
                                 if(special_case) {
                                     if(special_case === "castle queenside") {
                                         output.sendMessage([144, coordinatesToDecimal(0, 0), 12]);
@@ -530,6 +505,7 @@ const parseAPIResponse = (response) => {
                                 break;
                             case 1:
                                 output.sendMessage([144, coordinatesToDecimal(black_from[0], black_from[1]), piece.getColour()]);
+                                // if(taken_piece) output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), taken_piece.getColour()]);
                                 if(special_case) {
                                     if(special_case === "castle queenside") {
                                         output.sendMessage([144, coordinatesToDecimal(0, 0), board[0][3].getColour()]);
@@ -546,6 +522,7 @@ const parseAPIResponse = (response) => {
                             case 3:
                             case 5:
                                 output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), piece.getColour()]);
+                                // if(taken_piece) output.sendMessage([144, coordinatesToDecimal(black_to[0], black_to[1]), piece.getColour()]);
                                 if(special_case) {
                                     if(special_case === "castle queenside") {
                                         output.sendMessage([144, coordinatesToDecimal(3, 0), board[0][3].getColour()]);
@@ -703,7 +680,7 @@ if(process.env.DEBUG.toString() !== "true") {
     redraw();
     parseAPIResponse({
         type: "gameState",
-        moves: "a2a4 b4a3"
+        moves: "a2a4 e4f5"
     })
 }
 
