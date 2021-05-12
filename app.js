@@ -217,7 +217,7 @@ input.on('message', (deltaTime, message) => {
         else redraw();
     }
     else if(game_id) {
-        if(process.env.DEBUG.toString() === "true" || whose_turn === COLOUR.WHITE) {
+        if(process.env.DEBUG.toString() === "true" || whose_turn === COLOUR.WHITE || ask_promotion) {
             if(ask_promotion) {
                 if(message[2] === 127)  {
                     let coords_pressed = decimalToCoordinates(message[1]);
@@ -251,6 +251,8 @@ input.on('message', (deltaTime, message) => {
                         selected_piece = undefined;
                         output.sendMessage([176, 0, 0]);
                         redraw();
+
+                        whose_turn = COLOUR.BLACK;
                     }
                 }
             }
@@ -696,10 +698,6 @@ if(process.env.DEBUG.toString() !== "true") {
 } else {
     game_id = true;
     redraw();
-    parseAPIResponse({
-        type: "gameState",
-        moves: "a2a4 h2g1q"
-    })
 }
 
 process.on("beforeExit", () => output.closePort())
