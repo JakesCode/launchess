@@ -2,7 +2,7 @@ const { PIECE_TYPES, COLOUR } = require("./enums");
 const _ = require("lodash");
 
 // CURRENT BUGS //
-// Black promotion not added yet //
+// Castling still doesn't work //
 
 class Piece {
     constructor(type, colour) {

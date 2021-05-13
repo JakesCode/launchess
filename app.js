@@ -660,9 +660,9 @@ const parseAPIResponse = (response) => {
 console.log("Welcome to Launchess!");
 let game_id;
 if(process.env.DEBUG.toString() !== "true") {
-    axios.post("https://lichess.org/api/challenge/ai", {
-        level: 1,
-        color: "white" 
+    axios.post("https://lichess.org/api/challenge/basticle", {
+        color: "white",
+        rated: "false"
     }, {
         headers: {
             "Content-type": "application/json",
@@ -670,11 +670,7 @@ if(process.env.DEBUG.toString() !== "true") {
         }
     }).then(response => {
         if(response.data) {
-            console.log("Game accepted by Lichess bot. Good luck!");
-            game_id = response.data.id;
-    
-            // Join the game's stream //
-            fetch("https://lichess.org/api/bot/game/stream/" + game_id, {
+            fetch("https://lichess.org/api/stream/event", {
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer " + process.env.LICHESS_API_KEY
@@ -685,16 +681,78 @@ if(process.env.DEBUG.toString() !== "true") {
                     while (null !== (chunk = stream.read())) {
                         chunk = chunk.toString();
                         if(chunk !== "\n") {
-                            parseAPIResponse(JSON.parse(chunk));
+                            let jsonParsed = JSON.parse(chunk);
+                            if(jsonParsed) {
+                                if(jsonParsed.type) {
+                                    if(jsonParsed.type === "gameStart") {
+                                        game_id = jsonParsed.game.id;
+
+                                        // // Join the game's stream //
+                                        fetch("https://lichess.org/api/bot/game/stream/" + game_id, {
+                                            headers: {
+                                                "Content-Type": "application/json",
+                                                "Authorization": "Bearer " + process.env.LICHESS_API_KEY
+                                            }
+                                        }).then(response => response.body).then(stream => {
+                                            stream.on("readable", () => {
+                                                let chunk;
+                                                while (null !== (chunk = stream.read())) {
+                                                    chunk = chunk.toString();
+                                                    if(chunk !== "\n") {
+                                                        parseAPIResponse(JSON.parse(chunk));
+                                                    }
+                                                }
+                                            })
+                                        });
+                                        redraw();
+                                    }
+                                }
+                            }
                         }
                     }
                 })
             });
-            redraw();
+            
         }
     }).catch(err => {
         console.log(err)
     })
+
+    // axios.post("https://lichess.org/api/challenge/ai", {
+    //     level: 1,
+    //     color: "white" 
+    // }, {
+    //     headers: {
+    //         "Content-type": "application/json",
+    //         "Authorization": "Bearer " + process.env.LICHESS_API_KEY
+    //     }
+    // }).then(response => {
+    //     if(response.data) {
+    //         console.log("Game accepted by Lichess bot. Good luck!");
+    //         game_id = response.data.id;
+    
+    //         // Join the game's stream //
+    //         fetch("https://lichess.org/api/bot/game/stream/" + game_id, {
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //                 "Authorization": "Bearer " + process.env.LICHESS_API_KEY
+    //             }
+    //         }).then(response => response.body).then(stream => {
+    //             stream.on("readable", () => {
+    //                 let chunk;
+    //                 while (null !== (chunk = stream.read())) {
+    //                     chunk = chunk.toString();
+    //                     if(chunk !== "\n") {
+    //                         parseAPIResponse(JSON.parse(chunk));
+    //                     }
+    //                 }
+    //             })
+    //         });
+    //         redraw();
+    //     }
+    // }).catch(err => {
+    //     console.log(err)
+    // })
 } else {
     game_id = true;
     redraw();
